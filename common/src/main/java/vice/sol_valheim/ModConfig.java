@@ -1,15 +1,15 @@
 package vice.sol_valheim;
 
-import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigData;
 import me.shedaniel.autoconfig.annotation.Config;
 import me.shedaniel.autoconfig.annotation.ConfigEntry;
 import me.shedaniel.autoconfig.serializer.PartitioningSerializer;
 import me.shedaniel.cloth.clothconfig.shadowed.blue.endless.jankson.Comment;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
@@ -26,8 +26,10 @@ import java.util.List;
 public class ModConfig extends PartitioningSerializer.GlobalData {
 
     public static Common.FoodConfig getFoodConfig(Item item) {
-        var isDrink = item.getDefaultInstance().getUseAnimation() == UseAnim.DRINK;
-        if(item != Items.CAKE && !item.isEdible() && !isDrink)
+        var stack = item.getDefaultInstance();
+        var isDrink = stack.getUseAnimation() == UseAnim.DRINK;
+        var stackFood = stack.get(DataComponents.FOOD);
+        if (item != Items.CAKE && stackFood == null && !isDrink)
             return null;
 
         var existing = SOLValheim.Config.common.foodConfigs.get(item.arch$registryName());
@@ -35,26 +37,29 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
         {
             var registry = item.arch$registryName().toString();
 
-            var food = item == Items.CAKE
-                    ? new FoodProperties.Builder().nutrition(10).saturationMod(0.7f).build()
-                    : item.getFoodProperties();
+            FoodProperties food;
+            if (item == Items.CAKE) {
+                food = new FoodProperties.Builder().nutrition(10).saturationModifier(0.7f).build();
+            } else {
+                food = stackFood;
+            }
 
             if (isDrink) {
                 if (registry.contains("potion")) {
-                    food = new FoodProperties.Builder().nutrition(4).saturationMod(0.75f).build();
+                    food = new FoodProperties.Builder().nutrition(4).saturationModifier(0.75f).build();
                 }
                 else if (registry.contains("milk")) {
-                    food = new FoodProperties.Builder().nutrition(6).saturationMod(1f).build();
+                    food = new FoodProperties.Builder().nutrition(6).saturationModifier(1f).build();
                 }
                 else {
-                    food = new FoodProperties.Builder().nutrition(2).saturationMod(0.5f).build();
+                    food = new FoodProperties.Builder().nutrition(2).saturationModifier(0.5f).build();
                 }
             }
 
             existing = new Common.FoodConfig();
-            existing.nutrition = food.getNutrition();
+            existing.nutrition = food == null ? 2 : food.nutrition();
             existing.healthRegenModifier = 1f;
-            existing.saturationModifier = food.getSaturationModifier();
+            existing.saturationModifier = food == null ? 0.5f : food.saturation();
 
             if (registry.startsWith("farmers"))
             {
@@ -67,12 +72,6 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
                 existing.nutrition = 10;
                 existing.healthRegenModifier = 1.5f;
             }
-
-//            if (registry.equals("minecraft:beetroot_soup")) {
-//                var effectConfig = new Common.MobEffectConfig();
-//                effectConfig.ID = BuiltInRegistries.MOB_EFFECT.getKey(MobEffects.MOVEMENT_SPEED).toString();
-//                existing.extraEffects.add(effectConfig);
-//            }
 
             SOLValheim.Config.common.foodConfigs.put(item.arch$registryName(), existing);
         }
@@ -163,8 +162,10 @@ public class ModConfig extends PartitioningSerializer.GlobalData {
             @ConfigEntry.Gui.Tooltip() @Comment("Effect Level")
             public int amplifier = 1;
 
-            public MobEffect getEffect() {
-                return SOLValheim.MOB_EFFECTS.getRegistrar().get(new ResourceLocation(ID));
+            public Holder<MobEffect> getEffect() {
+                var loc = ResourceLocation.tryParse(ID);
+                if (loc == null) return null;
+                return net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.getHolder(loc).orElse(null);
             }
         }
 

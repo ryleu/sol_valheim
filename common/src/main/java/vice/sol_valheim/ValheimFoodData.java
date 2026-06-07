@@ -1,10 +1,10 @@
 package vice.sol_valheim;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.UseAnim;
@@ -16,22 +16,19 @@ import java.util.stream.Collectors;
 
 public class ValheimFoodData
 {
-    public static final EntityDataSerializer<ValheimFoodData> FOOD_DATA_SERIALIZER = new EntityDataSerializer<>(){
+    public static final StreamCodec<RegistryFriendlyByteBuf, ValheimFoodData> STREAM_CODEC = StreamCodec.of(
+            (buf, value) -> buf.writeNbt(value.save(new CompoundTag())),
+            buf -> ValheimFoodData.read(buf.readNbt())
+    );
+
+    public static final EntityDataSerializer<ValheimFoodData> FOOD_DATA_SERIALIZER = new EntityDataSerializer<>() {
         @Override
-        public void write(FriendlyByteBuf buffer, ValheimFoodData value)
-        {
-            buffer.writeNbt(value.save(new CompoundTag()));
+        public StreamCodec<? super RegistryFriendlyByteBuf, ValheimFoodData> codec() {
+            return STREAM_CODEC;
         }
 
         @Override
-        public ValheimFoodData read(FriendlyByteBuf buffer) {
-
-            return ValheimFoodData.read(buffer.readNbt());
-        }
-
-        @Override
-        public ValheimFoodData copy(ValheimFoodData value)
-        {
+        public ValheimFoodData copy(ValheimFoodData value) {
             var ret = new ValheimFoodData();
             ret.MaxItemSlots = value.MaxItemSlots;
             ret.ItemEntries = value.ItemEntries.stream().map(EatenFoodItem::new).collect(Collectors.toCollection(ArrayList::new));
@@ -39,7 +36,6 @@ public class ValheimFoodData
                 ret.DrinkSlot = new EatenFoodItem(value.DrinkSlot);
             return ret;
         }
-
     };
 
     public List<EatenFoodItem> ItemEntries = new ArrayList<>();
@@ -231,7 +227,9 @@ public class ValheimFoodData
         {
             var str = tag.getString("id" + count);
             var ticks = tag.getInt("ticks" + count);
-            var item = SOLValheim.ITEMS.getRegistrar().get(new ResourceLocation(str));
+            var loc = ResourceLocation.tryParse(str);
+            if (loc == null) continue;
+            var item = SOLValheim.ITEMS.getRegistrar().get(loc);
 
             instance.ItemEntries.add(new EatenFoodItem(item, ticks));
         }
@@ -241,8 +239,11 @@ public class ValheimFoodData
 
         if (!drink.isBlank())
         {
-            var item = SOLValheim.ITEMS.getRegistrar().get(new ResourceLocation(drink));
-            instance.DrinkSlot = new EatenFoodItem(item, drinkTicks);
+            var loc = ResourceLocation.tryParse(drink);
+            if (loc != null) {
+                var item = SOLValheim.ITEMS.getRegistrar().get(loc);
+                instance.DrinkSlot = new EatenFoodItem(item, drinkTicks);
+            }
         }
 
         return instance;

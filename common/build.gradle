@@ -4,27 +4,21 @@ architectury {
 
 repositories {
     maven { url "https://maven.shedaniel.me/" }
-    maven { url = "https://api.modrinth.com/maven" } // LazyDFU
+    maven { url = "https://api.modrinth.com/maven" }
     maven { url = "https://maven.terraformersmc.com/releases/" } // Mod Menu
-    maven { url = "https://mvn.devos.one/snapshots/" } // Create Fabric, Porting Lib, Forge Tags, Milk Lib, Registrate Fabric
-    maven { url = "https://cursemaven.com" } // Forge Config API Port
-    maven { url = "https://maven.cafeteria.dev/releases" } // Fake Player API
-    maven { url = "https://maven.jamieswhiteshirt.com/libs-release" } // Reach Entity Attributes
-    maven { url = "https://jitpack.io/" } // Mixin Extras, Fabric ASM
 }
 
 dependencies {
     modApi "dev.architectury:architectury:${rootProject.architectury_version}"
     modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric}"
     modCompileOnly "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api}+${rootProject.minecraft_version}"
-    modImplementation("me.shedaniel.cloth:cloth-config-fabric:${rootProject.cloth_config_version}")
+    modImplementation("me.shedaniel.cloth:cloth-config:${rootProject.cloth_config_version}") { transitive = false }
 }
 
 sourceSets.main {
     resources {
         srcDir("src/generated/resources")
         exclude(".cache/**")
-        exclude("assets/create/**")
     }
 }
 

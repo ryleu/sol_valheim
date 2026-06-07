@@ -1,5 +1,6 @@
 package vice.sol_valheim.mixin;
 
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -13,17 +14,17 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import vice.sol_valheim.accessors.PlayerEntityMixinDataAccessor;
 
-@Mixin({Item.class})
+@Mixin(value = {Item.class}, priority = 1500)
 public class ItemMixin
 {
     @Inject(at= {@At("HEAD")}, method = {"use(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/InteractionResultHolder;"}, cancellable = true)
     private void onCanConsume(Level level, Player player, InteractionHand usedHand, CallbackInfoReturnable<InteractionResultHolder<ItemStack>> info)
     {
         var item = (Item) (Object) this;
+        ItemStack itemStack = player.getItemInHand(usedHand);
+        var foodProperties = itemStack.get(DataComponents.FOOD);
 
-        if (item.isEdible()) {
-            ItemStack itemStack = player.getItemInHand(usedHand);
-
+        if (foodProperties != null) {
             if (item == Items.ROTTEN_FLESH) {
                 player.startUsingItem(usedHand);
 
@@ -33,7 +34,7 @@ public class ItemMixin
             }
 
             var canEat = ((PlayerEntityMixinDataAccessor) player).sol_valheim$getFoodData().canEat(item);
-            if (canEat || item.getFoodProperties().canAlwaysEat()) {
+            if (canEat || foodProperties.canAlwaysEat()) {
                 player.startUsingItem(usedHand);
 
                 info.setReturnValue(InteractionResultHolder.consume(itemStack));
@@ -46,7 +47,7 @@ public class ItemMixin
             return;
         }
 
-        info.setReturnValue(InteractionResultHolder.pass(player.getItemInHand(usedHand)));
+        info.setReturnValue(InteractionResultHolder.pass(itemStack));
         info.cancel();
     }
 }

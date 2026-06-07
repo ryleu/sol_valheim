@@ -25,7 +25,8 @@
     "sol_valheim-common.mixins.json"
   ],
   "depends": {
-    "minecraft": "${minecraft_version}",
+    "minecraft": ">=${minecraft_version}",
+    "java": ">=21",
     "fabricloader": ">=${fabric}",
     "fabric-api": ">=${fabric_api}"
   }

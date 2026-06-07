@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion = "[${forge},)"
+loaderVersion = "[4,)"
 license="GNU LGPL 3.0"
 issueTrackerURL="https://Anthony/sol_valheim/issues"
 
@@ -12,16 +12,22 @@ description = '''
 '''
 logoFile = "icon.png"
 
+[[mixins]]
+config = "sol_valheim.mixins.json"
+
+[[mixins]]
+config = "sol_valheim-common.mixins.json"
+
 [[dependencies.${id}]]
-modId = "forge"
-mandatory = true
-versionRange = "[${forge},)"
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge},)"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${id}]]
 modId = "minecraft"
-mandatory = true
-versionRange = "${minecraft_version}"
+type = "required"
+versionRange = "[${minecraft_version},)"
 ordering = "NONE"
 side = "BOTH"
